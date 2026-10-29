@@ -235,73 +235,37 @@ async function startBot() {
             "Jangan tutup bot sehingga proses selesai.",
         }, { quoted: msg });
 
-        // Download the original WhatsApp document.
-        console.log("📥 Memuat turun video...");
+        /// JERUNG HD — KEKALKAN FAIL ASAL
+console.log("📦 Mengekalkan format dan saiz video asal...");
 
-        const buffer = await downloadMediaMessage(
-          msg,
-          "buffer",
-          {},
-          {
-            logger,
-            reuploadRequest: sock.updateMediaMessage,
-          }
-        );
+const originalStats = await fs.stat(inputPath);
+const extension = path.extname(originalName).toLowerCase();
 
-        if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
-          throw new Error("Video download returned an empty buffer.");
-        }
+const originalMime =
+  mimeType ||
+  (extension === ".mov" ? "video/quicktime" : "video/mp4");
 
-        console.log(
-          `✅ Download selesai: ${buffer.length} bytes`
-        );
+console.log(`📁 Format asal: ${extension}`);
+console.log(
+  `📦 Saiz asal: ${(originalStats.size / 1024 / 1024).toFixed(2)} MB`
+);
 
-        tempDir = await fs.promises.mkdtemp(
-          path.join(os.tmpdir(), "jerung-hd-")
-        );
+// Hantar fail asal tanpa encoding FFmpeg
+await sock.sendMessage(
+  chatId,
+  {
+    video: { url: inputPath },
+    mimetype: originalMime,
+    fileName: originalName,
+    caption:
+      "✅ JERUNG HD\n" +
+      "📁 Format asal dikekalkan\n" +
+      `📦 Saiz fail: ${(originalStats.size / 1024 / 1024).toFixed(2)} MB`
+  },
+  { quoted: msg }
+);
 
-        const inputPath = path.join(
-          tempDir,
-          `input${extension}`
-        );
-
-        const outputPath = path.join(
-          tempDir,
-          "output.mp4"
-        );
-
-        await fs.promises.writeFile(inputPath, buffer);
-
-        console.log("📦 Menghantar video tanpa encoding semula...");
-
-await sock.sendMessage(chatId, {
-  video: { url: inputPath },
-  mimetype: mimeType || "video/mp4",
-  fileName: originalName,
-  caption: "✅ JERUNG HD — Video sedia untuk disimpan atau dikongsi ke Status."
-}, { quoted: msg });
-
-console.log("✅ Video berjaya dihantar.");
-        console.log("📤 Menghantar video ke WhatsApp...");
-
-        await sock.sendMessage(
-          chatId,
-          {
-            video: { url: outputPath },
-            mimetype: "video/mp4",
-            fileName:
-              `${path.parse(originalName).name}_JERUNG_HD.mp4`,
-            caption:
-              "🦈 JERUNG HD\n\n" +
-              "✅ Video selesai diproses!\n" +
-              "📁 Format: MP4\n" +
-              `📦 Saiz output: ${(outputStats.size / 1048576).toFixed(2)} MB`,
-          },
-          { quoted: msg }
-        );
-
-        console.log(
-          `✅ Video berjaya dihantar: ${originalName}`
+console.log("✅ Fail asal dihantar tanpa encoding semula.");
         );
       } catch (error) {
         console.error(
