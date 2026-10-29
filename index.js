@@ -272,40 +272,16 @@ async function startBot() {
 
         await fs.promises.writeFile(inputPath, buffer);
 
-        // Release the large in-memory buffer as soon as possible.
-        console.log("🎬 Memulakan encoding FFmpeg...");
+        console.log("📦 Menghantar video tanpa encoding semula...");
 
-        await runFFmpeg([
-          "-hide_banner",
-          "-loglevel", "error",
-          "-y",
-          "-i", inputPath,
+await sock.sendMessage(chatId, {
+  video: { url: inputPath },
+  mimetype: mimeType || "video/mp4",
+  fileName: originalName,
+  caption: "✅ JERUNG HD — Video sedia untuk disimpan atau dikongsi ke Status."
+}, { quoted: msg });
 
-          "-map", "0:v:0",
-          "-map", "0:a?",
-
-          "-c:v", "libx264",
-          "-preset", "veryfast",
-          "-crf", "18",
-          "-pix_fmt", "yuv420p",
-
-          "-c:a", "aac",
-          "-b:a", "192k",
-
-          "-movflags", "+faststart",
-          outputPath,
-        ]);
-
-        const outputStats = await fs.promises.stat(outputPath);
-
-        if (!outputStats.isFile() || outputStats.size === 0) {
-          throw new Error("FFmpeg output is missing or empty.");
-        }
-
-        console.log(
-          `✅ Encoding selesai: ${outputStats.size} bytes`
-        );
-
+console.log("✅ Video berjaya dihantar.");
         console.log("📤 Menghantar video ke WhatsApp...");
 
         await sock.sendMessage(
