@@ -130,22 +130,19 @@ async function startBot() {
       const text = getText(message).toLowerCase();
 
       if (["hi", "hai", "hello", "helo", "start", "menu"].includes(text)) {
-        await sock.sendMessage(
-          chatId,
-          {
-            text:
-              `🦈 ${BOT_NAME}\n\n` +
-              "Hantar video melalui Document / Dokumen.\n" +
-              "Format disokong: MOV dan MP4.\n\n" +
-              "📦 Tiada encoding semula.\n" +
-              "📁 Nama dan format fail asal dikekalkan.\n" +
-              "ℹ️ Untuk Status, simpan video ke galeri jika perlu.",
-          },
-          { quoted: msg }
-        );
-        continue;
-      }
-
+await sock.sendMessage(
+  chatId,
+  {
+    video: { url: inputPath },
+    mimetype: video.mimeType,
+    fileName: video.originalName,
+    caption:
+      "✅ JERUNG HD\n" +
+      "📁 Format asal dikekalkan jika disokong.\n" +
+      "🦈 Tiada encoding semula oleh bot."
+  },
+  { quoted: msg }
+);
       const document = message.documentMessage;
 
       if (!document) {
