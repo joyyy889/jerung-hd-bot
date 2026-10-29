@@ -226,78 +226,90 @@ async function startBot() {
 
       let tempDir;
 
-      try {
-        console.log(`📥 Menerima fail: ${originalName}`);
+      
+try {
+  console.log(`📥 Menerima fail: ${originalName}`);
 
-        await sock.sendMessage(chatId, {
-          text:
-            "⏳ Video diterima! Sedang memproses...\n\n" +
-            "Jangan tutup bot sehingga proses selesai.",
-        }, { quoted: msg });
+  await sock.sendMessage(chatId, {
+    text:
+      "⏳ Video diterima! Sedang menyediakan fail asal...\n\n" +
+      "Tiada encoding semula akan dilakukan."
+  }, { quoted: msg });
 
-        /// JERUNG HD — KEKALKAN FAIL ASAL
-console.log("📦 Mengekalkan format dan saiz video asal...");
+  // Cipta folder sementara
+  tempDir = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), "jerung-hd-")
+  );
 
-const originalStats = await fs.stat(inputPath);
-const extension = path.extname(originalName).toLowerCase();
+  // Muat turun kandungan asal daripada WhatsApp
+  const inputPath = path.join(tempDir, originalName);
 
-const originalMime =
-  mimeType ||
-  (extension === ".mov" ? "video/quicktime" : "video/mp4");
-
-console.log(`📁 Format asal: ${extension}`);
-console.log(
-  `📦 Saiz asal: ${(originalStats.size / 1024 / 1024).toFixed(2)} MB`
-);
-
-// Hantar fail asal tanpa encoding FFmpeg
-await sock.sendMessage(
-  chatId,
-  {
-    video: { url: inputPath },
-    mimetype: originalMime,
-    fileName: originalName,
-    caption:
-      "✅ JERUNG HD\n" +
-      "📁 Format asal dikekalkan\n" +
-      `📦 Saiz fail: ${(originalStats.size / 1024 / 1024).toFixed(2)} MB`
-  },
-  { quoted: msg }
-);
-
-console.log("✅ Fail asal dihantar tanpa encoding semula.");
-        );
-      } catch (error) {
-        console.error(
-          "❌ VIDEO PROCESSING / SEND ERROR:",
-          error
-        );
-
-        try {
-          await sock.sendMessage(chatId, {
-            text:
-              "❌ Video gagal diproses atau dihantar.\n\n" +
-              "Sila cuba lagi. Jika masalah berulang, " +
-              "admin perlu menyemak log bot.",
-          }, { quoted: msg });
-        } catch (sendError) {
-          console.error(
-            "❌ Gagal menghantar mesej ralat:",
-            sendError
-          );
-        }
-      } finally {
-        if (tempDir) {
-          await fs.promises.rm(tempDir, {
-            recursive: true,
-            force: true,
-          }).catch((err) => {
-            console.error("Gagal membersihkan fail sementara:", err);
-          });
-        }
-      }
+  const buffer = await downloadMediaMessage(
+    msg,
+    "buffer",
+    {},
+    {
+      logger,
+      reuploadRequest: sock.updateMediaMessage
     }
-  });
+  );
+
+  // Simpan fail asal tanpa encoding FFmpeg
+  await fs.promises.writeFile(inputPath, buffer);
+
+  const originalStats = await fs.promises.stat(inputPath);
+  const sizeMB = (
+    originalStats.size / (1024 * 1024)
+  ).toFixed(2);
+
+  const originalMime = isMOV
+    ? "video/quicktime"
+    : "video/mp4";
+
+  console.log(`📁 Format asal: ${extension}`);
+  console.log(`📦 Saiz fail asal: ${sizeMB} MB`);
+  console.log("📤 Menghantar video asal...");
+
+  // Hantar sebagai video WhatsApp biasa
+  await sock.sendMessage(
+    chatId,
+    {
+      video: { url: inputPath },
+      mimetype: originalMime,
+      fileName: originalName,
+      caption:
+        "✅ JERUNG HD\n" +
+        `📁 Format: ${extension.toUpperCase().replace(".", "")}\n` +
+        `📦 Saiz fail asal: ${sizeMB} MB\n` +
+        "🦈 Tiada encoding semula oleh bot."
+    },
+    { quoted: msg }
+  );
+
+  console.log("✅ Video asal berjaya dihantar.");
+
+} catch (error) {
+  console.error("❌ VIDEO PROCESSING / SEND ERROR:", error);
+
+  try {
+    await sock.sendMessage(chatId, {
+      text:
+        "❌ Video gagal dihantar.\n\n" +
+        "Sila semak log bot untuk mengetahui puncanya."
+    }, { quoted: msg });
+  } catch (sendError) {
+    console.error("❌ Gagal menghantar mesej ralat:", sendError);
+  }
+
+} finally {
+  if (tempDir) {
+    await fs.promises.rm(tempDir, {
+      recursive: true,
+      force: true
+    }).catch((err) => {
+      console.error("Gagal membersihkan fail sementara:", err);
+    });
+  }
 }
 
 startBot().catch((error) => {
