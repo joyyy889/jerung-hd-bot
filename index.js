@@ -61,7 +61,35 @@ function getMessageContent(message) {
 
   return content || {};
 }
+const media = sentMessage.message?.videoMessage;
 
+console.log("[JERUNG HD] VIDEO DIAGNOSTIC:", {
+
+  hasVideoMessage: Boolean(media),
+
+  hasMediaKey: Boolean(media?.mediaKey),
+
+  hasDirectPath: Boolean(media?.directPath),
+
+  hasFileSha256: Boolean(media?.fileSha256),
+
+  hasFileEncSha256: Boolean(media?.fileEncSha256),
+
+  mimetype: media?.mimetype,
+
+  seconds: media?.seconds,
+
+  fileLength: media?.fileLength?.toString(),
+
+  hasThumbnail: Boolean(media?.jpegThumbnail)
+
+});
+
+if (!sentMessage?.key?.id) {
+
+  throw new Error('WhatsApp did not return message ID.');
+
+}
 function getText(message) {
   const content = getMessageContent(message.message);
 
